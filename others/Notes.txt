@@ -1,0 +1,62 @@
+p5 download
+https://p5js.org/download/
+
+ST3
+https://www.sublimetext.com/3
+
+File > Open folder to have tree on left
+
+https://github.com/sergiomajluf/p5.js-sublime
+	Download
+	Unzip and rename to P5 in Packages/User
+
+In index.html have to change path with ../ to account for Projects folder
+
+https://packagecontrol.io/installation
+	Ctrl Shift P > Install Package Control
+	Ctrl Shift P > Install Package > Brogrammer
+
+Play sound
+https://www.youtube.com/watch?v=Pn1g1wjxl_0
+
+localhost server
+https://github.com/processing/p5.js/wiki/Local-server
+https://www.youtube.com/watch?v=UCHzlUiDD10
+
+Visualising music
+https://therewasaguy.github.io/p5-music-viz/
+
+Sine wave downloader
+https://www.audiocheck.net/audiofrequencysignalgenerator_sinetone.php
+
+Time function
+https://www.openprocessing.org/sketch/598138/
+
+Waveform + playhead
+https://therewasaguy.github.io/p5-music-viz/demos/02_draw_peaks_and_playhead/
+
+p5 sound reference
+https://p5js.org/reference/#/libraries/p5.sound
+
+HZ from frequency
+https://stackoverflow.com/a/50421601/6208315
+
+Main reference page
+https://p5js.org/reference/
+
+Function generator
+https://idmnyu.github.io/p5.js-func/
+
+200 Fireball animation
+https://editor.p5js.org/lkkchung/sketches/r1wT_8mJf
+
+find closest number in array
+https://stackoverflow.com/a/19277804/6208315
+https://www.gavsblog.com/blog/find-closest-number-in-array-javascript
+
+Continuous lines
+https://p5js.org/examples/drawing-continous-lines.html
+DON'T NAME YOUR CANVAS, HAVE JUST A GENERAL ONE YOU DINGUS
+
+Audio range
+https://www.teachmeaudio.com/mixing/techniques/audio-spectrum
