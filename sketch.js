@@ -4,9 +4,12 @@ var startDegree = 0;
 var nyquist, deltaF;
 var frequencyBins = [];
 var arcArray = new Array(numberOfBins);
-var amplitudeThreshold = -75;		// CHANGE THIS
+var amplitudeThreshold = -80;		// CHANGE THIS
 var circleScale;
 var cnv;
+var maxPeakValue = amplitudeThreshold;
+var melRangeLow = 0;
+var melRangeHigh = 4000;
 
 function preload() {
   //sound = loadSound('assets/sounds/meow.wav');
@@ -16,7 +19,9 @@ function preload() {
   //sound = loadSound('assets/sounds/humpback-whale.mp3');
   //sound = loadSound('assets/sounds/minke-whale.mp3');
   //sound = loadSound('assets/sounds/Tempest.mp3');
-  sound = loadSound('assets/sounds/1-02 Don\'t Be Sad.mp3');		// CHANGE THIS
+  //sound = loadSound('assets/sounds/1-02 Don\'t Be Sad.mp3');		// CHANGE THIS  
+  //sound = loadSound('assets/sounds/sin_1000Hz_-3dBFS_3s.wav');
+  sound = loadSound('assets/sounds/short-beaked-common-dolphin.mp3');
 }
 
 function mousePressed() {
@@ -37,7 +42,7 @@ function setup() {
   fft = new p5.FFT();
 
   // Start sound @ 0 volume
-  sound.amp(0);  
+  sound.amp(0);
   sound.loop();
 
   // Nyquist Hz value
@@ -52,15 +57,20 @@ function setup() {
 
 
 function draw() {
-	circleScale = height * 6;		// CHANGE THIS
+	circleScale = min(height, width);		// CHANGE THIS
   angleMode(DEGREES);
+  colorMode(HSB);
 
   let spectrum = fft.analyze(numberOfBins, "dB");
 
   // ERASER LINES GOING ROUND THE CIRCLE
   for (var i = 0; i < frequencyBins.length; i++) {
-  	let radius = round(map(frequencyBins[i], 1, nyquist, 10, circleScale)); // Hz from 1 to 23kHz -> 10 to 100 radius
-  	//let radius = round(log(i)/log(1024)*circleScale/20);
+  	// MEL SCALE https://en.wikipedia.org/wiki/Mel_scale
+		let melFrequency = round(2595 * Math.log10(1 + (frequencyBins[i]/700)));
+		let radius = round(map(melFrequency, 0, 4000, 10, circleScale));
+  	//let radius = round(exp(i/numberOfBins)*circleScale/10);
+  	//let radius = round(log(i)/log(numberOfBins)*circleScale/10);
+  	//let radius = round(map(frequencyBins[i], 1, nyquist, 10, circleScale)); // Hz from 1 to 23kHz -> 10 to 100 radius
 		let xE1 = width/2 + round(radius * cos(startDegree+2));
 		let yE1 = height/2 + round(radius * sin(startDegree+2));
 		let xE2 = width/2 + round(radius * cos(startDegree+3));
@@ -68,52 +78,48 @@ function draw() {
 
 		strokeWeight(5);
 		stroke(0);
-		//point(x1, y1);
 		line(xE1, yE1, xE2, yE2);
   }
 
   // ACTUAL SOUND LINES
+  maxPeakValue = amplitudeThreshold;
 	for (let i = 0; i< spectrum.length; i++){
-    if (spectrum[i] > amplitudeThreshold) {      
+    if (spectrum[i] > amplitudeThreshold) {
+  		if (spectrum[i] > maxPeakValue) {
+  			maxPeakValue = spectrum[i];
+  		}
+
 			let peakFrequency = i * (nyquist / numberOfBins);
 			let peakBinIndex = findClosestFrequencyBinIndex(peakFrequency);
 
-			let radius = round(map(frequencyBins[peakBinIndex], 1, nyquist, 10, circleScale)); // Hz from 1 to 23kHz -> 10 to 100 radius
-			//output = log(input+1)/log(1024)*255;
-			//let radius = round(log(peakBinIndex)/log(1024)*circleScale/20);
-			let thickness = round(map(spectrum[i], -140, 0, 0.1, 5));	// dB from -140 to 0 -> 0 to 50 thickness
+			// MEL SCALE https://en.wikipedia.org/wiki/Mel_scale
+			let melFrequency = round(2595 * Math.log10(1 + (frequencyBins[peakBinIndex]/700)));
+			let radius = round(map(melFrequency, 0, 4000, 10, circleScale));
+			//let radius = round(exp(peakBinIndex/(numberOfBins/4)));
+			//let radius = round(log(peakBinIndex)/log(numberOfBins)*circleScale/10);
+			//let radius = round(map(frequencyBins[peakBinIndex], 1, nyquist, 10, circleScale)); // Hz from 1 to 23kHz -> 10 to 100 radius
+			let thickness = round(map(spectrum[i], amplitudeThreshold, maxPeakValue, 0.1, 3));	// dB from -140 to 0 -> 0 to 50 thickness		// CHANGE LAST NUMBER
 			let x1 = width/2 + round(radius * cos(startDegree));
 			let y1 = height/2 + round(radius * sin(startDegree));
 			let x2 = width/2 + round(radius * cos(startDegree+1));
-			let y2 = height/2 + round(radius * sin(startDegree+1));			
+			let y2 = height/2 + round(radius * sin(startDegree+1));
+
+			//let colour = 0;
+			// if (i < numberOfBins/20) {
+			// 	colour = map(i, 0, numberOfBins/20, 360, 0);
+			// } else {
+			// 	colour = map(i, numberOfBins/20, numberOfBins/10, 360, 0);
+			// }
+
+			let colour = map(spectrum[i], amplitudeThreshold, maxPeakValue, 360, 0);
+			/*let bright = map(i, 0, numberOfBins/30, 0, 100);
+			let sat = map(thickness, 0, numberOfBins/30, 25, 100);*/
 
 			strokeWeight(thickness);
-			stroke(255);
-			//point(x1, y1);
+			stroke(colour, 100, 50);
 			line(x1, y1, x2, y2);
 		}
 	}
-
-			//arcArray[peakBinIndex] = new SoundPoint(width/2, height/2, peakFrequency, spectrum[i], startDegree, nyquist);
-
-			/*if (arcArray[peakBinIndex] == null) {
-				arcArray[peakBinIndex] = new SoundPoint(width/2, height/2, peakFrequency, spectrum[i], startDegree, nyquist);
-			} else {
-				arcArray[peakBinIndex].update(spectrum[i], startDegree);
-			}*/
-
-  /*// Draw play head
-	strokeWeight(20);
-	stroke(0);
-	let limitX = width/2 + round(circleScale * cos(startDegree+5));
-	let limitY = height/2 + round(circleScale * sin(startDegree+5));
-	line(width/2, height/2, limitX, limitY);*/
-
-	// for (var i = 0; i < arcArray.length; i++) {
-	// 	if (arcArray[i] != null) {
-	// 		arcArray[i].show();
-	// 	}
-	// }
 
 	if (startDegree >= 360) {
 		startDegree = 0;
@@ -129,7 +135,7 @@ function toggleSound() {
     sound.amp(0, 0.2);
   } else {
     soundPlayingFlag = true;
-    sound.amp(0.2, 0.2);
+    sound.amp(1, 0.2);
   }
 }
 
@@ -163,7 +169,8 @@ function closest(needle, haystack) {
 
 	Play/Pause
 
-	logarithmic circleScale instead of linear
+	logarithmic circleScale instead of linear : NOT ANYMORE
+		See blackoard.png
 
 	dynamic threshold over frequencies (lower threshold for higher frequencies for example)
 		low mid high thresh slider
@@ -178,5 +185,8 @@ function closest(needle, haystack) {
 
 	Playhead(startDegree) depends on song.currentTime(), not just frames
 
-	COLOURS 
+	COLOURS : YAY
+
+	Have lines draw themselves and go around from a fixed line
+		Fixed reference point for view is playhead, not vinyl
 */
