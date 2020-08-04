@@ -1,15 +1,19 @@
-var soundPlayingFlag = false;
-var numberOfBins = 1024;
-var startDegree = 0;
-var nyquist, deltaF;
-var frequencyBins = [];
-var arcArray = new Array(numberOfBins);
-var amplitudeThreshold = -80;		// CHANGE THIS
-var circleScale;
-var cnv;
-var maxPeakValue = amplitudeThreshold;
-var melRangeLow = 0;
-var melRangeHigh = 4000;
+let soundPlayingFlag = false;
+let numberOfBins = 1024;
+let startDegree = 0;
+let nyquist, deltaF;
+let frequencyBins = [];
+let melFrequencyBins = [];
+let arcArray = new Array(numberOfBins);
+let amplitudeThreshold = -55;		// CHANGE THIS
+let circleScale;
+let cnv;
+let maxPeakValue = amplitudeThreshold;
+let maxAmplitudeExpectancy = -35;
+let melRangeLow = 0;
+let melRangeHigh = 4000;
+
+// Tempest [-55, -35], scale*8
 
 function preload() {
   //sound = loadSound('assets/sounds/meow.wav');
@@ -18,10 +22,11 @@ function preload() {
   //sound = loadSound('assets/sounds/JoshWoodward-CS-NoVox-10-HeyRuth.mp3');humpback-whale.mp3
   //sound = loadSound('assets/sounds/humpback-whale.mp3');
   //sound = loadSound('assets/sounds/minke-whale.mp3');
-  //sound = loadSound('assets/sounds/Tempest.mp3');
+  sound = loadSound('assets/sounds/Tempest.mp3');
   //sound = loadSound('assets/sounds/1-02 Don\'t Be Sad.mp3');		// CHANGE THIS  
   //sound = loadSound('assets/sounds/sin_1000Hz_-3dBFS_3s.wav');
-  sound = loadSound('assets/sounds/short-beaked-common-dolphin.mp3');
+  //sound = loadSound('assets/sounds/short-beaked-common-dolphin.mp3');
+  //sound = loadSound('assets/sounds/atlantic-spotted-dolphin.mp3');
 }
 
 function mousePressed() {
@@ -35,7 +40,7 @@ function setup() {
   getAudioContext().suspend();
 
   // Canvas
-  cnv = createCanvas(windowWidth,windowHeight);
+  createCanvas(windowWidth,windowHeight);
   background(0);
 
   // FFT object
@@ -50,35 +55,48 @@ function setup() {
 	deltaF = nyquist / numberOfBins;
 
 	// Create our bins of frequencies
-	for (var i = 0; i < numberOfBins; i++) {
+	for (let i = 0; i < numberOfBins; i++) {
 		frequencyBins[i] = round(deltaF * i);
 	}
+
+	// Create our bins of mel scaled frequencies
+	melFrequencyBins = frequencyBins.map((freq) => round(2595 * Math.log10(1 + (freq/700))));
+
+	circleScale = Math.min(windowWidth,windowHeight)*8;		// CHANGE THIS
 }
 
 
 function draw() {
-	circleScale = min(height, width);		// CHANGE THIS
   angleMode(DEGREES);
   colorMode(HSB);
 
   let spectrum = fft.analyze(numberOfBins, "dB");
 
-  // ERASER LINES GOING ROUND THE CIRCLE
-  for (var i = 0; i < frequencyBins.length; i++) {
+  let energyArray = [];
+  for (let i = 0; i < frequencyBins.length; i++) {
+  	// -------------------------ERASER LINES GOING ROUND THE CIRCLE-----------------
   	// MEL SCALE https://en.wikipedia.org/wiki/Mel_scale
 		let melFrequency = round(2595 * Math.log10(1 + (frequencyBins[i]/700)));
-		let radius = round(map(melFrequency, 0, 4000, 10, circleScale));
+		//let radius = round(map(melFrequency, 0, 4000, 10, circleScale, true));
   	//let radius = round(exp(i/numberOfBins)*circleScale/10);
-  	//let radius = round(log(i)/log(numberOfBins)*circleScale/10);
-  	//let radius = round(map(frequencyBins[i], 1, nyquist, 10, circleScale)); // Hz from 1 to 23kHz -> 10 to 100 radius
+  	//let radius = round(log(i)/log(numberOfBins)*circleScale);
+  	let radius = round(map(frequencyBins[i], 1, nyquist, 10, circleScale, true)); // Hz from 1 to 23kHz -> 10 to 100 radius
+		//let radius = round(map(peakFrequency, 1, nyquist, 10, circleScale, true));
 		let xE1 = width/2 + round(radius * cos(startDegree+2));
 		let yE1 = height/2 + round(radius * sin(startDegree+2));
 		let xE2 = width/2 + round(radius * cos(startDegree+3));
 		let yE2 = height/2 + round(radius * sin(startDegree+3));
 
-		strokeWeight(5);
+		strokeWeight(8);
 		stroke(0);
 		line(xE1, yE1, xE2, yE2);
+
+		// Get energy in each frequency bin
+		/*if (i == 0) {
+			energyArray[i] = fft.getEnergy()
+		} else {
+			
+		}*/
   }
 
   // ACTUAL SOUND LINES
@@ -94,10 +112,11 @@ function draw() {
 
 			// MEL SCALE https://en.wikipedia.org/wiki/Mel_scale
 			let melFrequency = round(2595 * Math.log10(1 + (frequencyBins[peakBinIndex]/700)));
-			let radius = round(map(melFrequency, 0, 4000, 10, circleScale));
+			//let radius = round(map(melFrequency, 0, 4000, 10, circleScale, true));
 			//let radius = round(exp(peakBinIndex/(numberOfBins/4)));
-			//let radius = round(log(peakBinIndex)/log(numberOfBins)*circleScale/10);
-			//let radius = round(map(frequencyBins[peakBinIndex], 1, nyquist, 10, circleScale)); // Hz from 1 to 23kHz -> 10 to 100 radius
+			//let radius = round(log(peakBinIndex)/log(numberOfBins)*circleScale);
+			//let radius = round(map(frequencyBins[peakBinIndex], 1, nyquist, 100, circleScale, true)); // Hz from 1 to 23kHz -> 10 to 100 radius
+			let radius = round(map(peakFrequency, 1, nyquist, 10, circleScale, true));
 			let thickness = round(map(spectrum[i], amplitudeThreshold, maxPeakValue, 0.1, 3));	// dB from -140 to 0 -> 0 to 50 thickness		// CHANGE LAST NUMBER
 			let x1 = width/2 + round(radius * cos(startDegree));
 			let y1 = height/2 + round(radius * sin(startDegree));
@@ -111,11 +130,13 @@ function draw() {
 			// 	colour = map(i, numberOfBins/20, numberOfBins/10, 360, 0);
 			// }
 
-			let colour = map(spectrum[i], amplitudeThreshold, maxPeakValue, 360, 0);
+			//let colour = map(spectrum[i], amplitudeThreshold, maxPeakValue, 360, 0);
+			let colour = map(spectrum[i], amplitudeThreshold, maxAmplitudeExpectancy, 275, 0);
 			/*let bright = map(i, 0, numberOfBins/30, 0, 100);
 			let sat = map(thickness, 0, numberOfBins/30, 25, 100);*/
 
-			strokeWeight(thickness);
+			//strokeWeight(thickness);
+			strokeWeight(7);
 			stroke(colour, 100, 50);
 			line(x1, y1, x2, y2);
 		}

@@ -68,3 +68,15 @@ Heaviside Step function
 https://en.wikipedia.org/wiki/Heaviside_step_function
 t-5
 -t-5
+
+Audio cues and controls 
+https://p5js.org/reference/#/p5.MediaElement/addCue
+
+FFT analyze frequency domain
+https://github.com/processing/p5.js-sound/issues/353
+
+JS getFloatFrequencyData
+https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode/getFloatFrequencyData
+
+JS FFT Size
+https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode/fftSize
