@@ -1,37 +1,58 @@
 let soundPlayingFlag = false;
 let numberOfBins = 1024;
 let startDegree = 0;
+let deltaDegree = 1;
 let nyquist, deltaF;
 let frequencyBins = [];
 let melFrequencyBins = [];
 let arcArray = new Array(numberOfBins);
-let amplitudeThreshold = -55;		// CHANGE THIS
+let amplitudeThreshold = -65;		// CHANGE THIS
 let circleScale;
-let cnv;
 let maxPeakValue = amplitudeThreshold;
-let maxAmplitudeExpectancy = -35;
+let maxAmplitudeExpectancy = -30;
+let scaleMultiplier = 5;
 let melRangeLow = 0;
 let melRangeHigh = 4000;
 
-// Tempest [-55, -35], scale*8
+let presetTempest 				= ['Tempest', 0, -52, -35, 8];
+let presetAtlanticDolphin = ['AtlanticDolphin',1 , -70, -50, .6];
+let presetMinke 					= ['Minke', 2, -70, -50, 9];
+let presetDontBeSad 			= ['DontBeSad', 3, -65, -30, 5];
+let presetHumpback 				= ['Humpback', 4, -70, -30, 10];
+let presetBeakedDolphin 	= ['BeakedDolphin', 5, -76, -70, .5];
+let presetJekyll 					= ['Jekyll', 6, -55, -35, 12];
+
+let presets = [presetTempest, presetAtlanticDolphin, presetMinke, presetDontBeSad, presetHumpback, presetBeakedDolphin, presetJekyll];
+
+let songButtonArray = Array(presets.length);
+let currentPlayingSongIndex = -1;
+
+// Tempest [-52, -35], scale*8
+// Atlantic dolphin [-70, -50, *.6]
+// Minke [-70, -50, *9]
+// Don't be sad [-65, -30, *5]
+// Humpback [-70, -30, *10]
+// beaked dolphin [-76, -70, *.5]
+// Jekyll [-55, -35, *12]
 
 function preload() {
   //sound = loadSound('assets/sounds/meow.wav');
   //sound = loadSound('assets/sounds/sin_440Hz_-3dBFS_3s.wav');
   //sound = loadSound('assets/sounds/sin_4400Hz_-3dBFS_3s.wav');
   //sound = loadSound('assets/sounds/JoshWoodward-CS-NoVox-10-HeyRuth.mp3');humpback-whale.mp3
-  //sound = loadSound('assets/sounds/humpback-whale.mp3');
-  //sound = loadSound('assets/sounds/minke-whale.mp3');
-  sound = loadSound('assets/sounds/Tempest.mp3');
-  //sound = loadSound('assets/sounds/1-02 Don\'t Be Sad.mp3');		// CHANGE THIS  
+  presetTempest.push(loadSound('assets/sounds/Tempest.mp3'));
+  presetAtlanticDolphin.push(loadSound('assets/sounds/atlantic-spotted-dolphin.mp3'));
+  presetMinke.push(loadSound('assets/sounds/minke-whale.mp3'));
+  presetDontBeSad.push(loadSound('assets/sounds/1-02 Don\'t Be Sad.mp3'));
+  presetHumpback.push(loadSound('assets/sounds/humpback-whale.mp3'));
+  presetBeakedDolphin.push(loadSound('assets/sounds/short-beaked-common-dolphin.mp3'));
+  presetJekyll.push(loadSound('assets/sounds/10 Jekyll.m4a'));
   //sound = loadSound('assets/sounds/sin_1000Hz_-3dBFS_3s.wav');
-  //sound = loadSound('assets/sounds/short-beaked-common-dolphin.mp3');
-  //sound = loadSound('assets/sounds/atlantic-spotted-dolphin.mp3');
 }
 
 function mousePressed() {
   userStartAudio();
-	toggleSound();
+	//toggleSound();
 }
 
 
@@ -47,8 +68,8 @@ function setup() {
   fft = new p5.FFT();
 
   // Start sound @ 0 volume
-  sound.amp(0);
-  sound.loop();
+  /*sound.amp(0);
+  sound.loop();*/
 
   // Nyquist Hz value
 	nyquist = sampleRate() / 2;
@@ -62,7 +83,18 @@ function setup() {
 	// Create our bins of mel scaled frequencies
 	melFrequencyBins = frequencyBins.map((freq) => round(2595 * Math.log10(1 + (freq/700))));
 
-	circleScale = Math.min(windowWidth,windowHeight)*8;		// CHANGE THIS
+	// Buttons for each song
+	for (let i = 0; i < songButtonArray.length; i++) {
+		songButtonArray[i] = createButton(presets[i][0]); // Name each button
+		songButtonArray[i].mousePressed(() => playSong(presets[i][1]));	// Call playSong with the index of played song
+		songButtonArray[i].position(10, (i+1) * 20);
+	}
+
+	/*
+	playButton = createButton('Play / Pause');
+	playButton.mousePressed(toggleSound);
+	playButton.position(10,radiusSliderArray[radiusSliderArray.length - 1].y + 20);*/
+
 }
 
 
@@ -70,9 +102,11 @@ function draw() {
   angleMode(DEGREES);
   colorMode(HSB);
 
+	circleScale = Math.min(windowWidth,windowHeight)*scaleMultiplier;		// CHANGE THIS
+
   let spectrum = fft.analyze(numberOfBins, "dB");
 
-  let energyArray = [];
+  /*let energyArray = [];
   for (let i = 0; i < frequencyBins.length; i++) {
   	// -------------------------ERASER LINES GOING ROUND THE CIRCLE-----------------
   	// MEL SCALE https://en.wikipedia.org/wiki/Mel_scale
@@ -92,11 +126,21 @@ function draw() {
 		line(xE1, yE1, xE2, yE2);
 
 		// Get energy in each frequency bin
-		/*if (i == 0) {
-			energyArray[i] = fft.getEnergy()
-		} else {
-			
-		}*/
+		
+  }*/
+
+  // ---------- ERASER LINES ----------
+  strokeWeight(10);
+  stroke(0);
+  for (var i = 0; i < numberOfBins; i++) {
+  	let eraserRadius = map(i, 0, numberOfBins, 0, circleScale);
+  	let xE1 = width/2 + round(eraserRadius * cos(startDegree+2*deltaDegree));
+		let yE1 = height/2 + round(eraserRadius * sin(startDegree+2*deltaDegree));
+		let xE2 = width/2 + round(eraserRadius * cos(startDegree+3*deltaDegree));
+		let yE2 = height/2 + round(eraserRadius * sin(startDegree+3*deltaDegree));
+
+		//strokeWeight(map(i, 1, circleScale, 5, 12));
+		line(xE1, yE1, xE2, yE2);
   }
 
   // ACTUAL SOUND LINES
@@ -117,7 +161,7 @@ function draw() {
 			//let radius = round(log(peakBinIndex)/log(numberOfBins)*circleScale);
 			//let radius = round(map(frequencyBins[peakBinIndex], 1, nyquist, 100, circleScale, true)); // Hz from 1 to 23kHz -> 10 to 100 radius
 			let radius = round(map(peakFrequency, 1, nyquist, 10, circleScale, true));
-			let thickness = round(map(spectrum[i], amplitudeThreshold, maxPeakValue, 0.1, 3));	// dB from -140 to 0 -> 0 to 50 thickness		// CHANGE LAST NUMBER
+			let thickness = round(map(spectrum[i], amplitudeThreshold, maxPeakValue, 0.1, 7));	// dB from -140 to 0 -> 0 to 50 thickness		// CHANGE LAST NUMBER
 			let x1 = width/2 + round(radius * cos(startDegree));
 			let y1 = height/2 + round(radius * sin(startDegree));
 			let x2 = width/2 + round(radius * cos(startDegree+1));
@@ -135,8 +179,8 @@ function draw() {
 			/*let bright = map(i, 0, numberOfBins/30, 0, 100);
 			let sat = map(thickness, 0, numberOfBins/30, 25, 100);*/
 
-			//strokeWeight(thickness);
-			strokeWeight(7);
+			strokeWeight(thickness);
+			//strokeWeight(7);
 			stroke(colour, 100, 50);
 			line(x1, y1, x2, y2);
 		}
@@ -145,7 +189,49 @@ function draw() {
 	if (startDegree >= 360) {
 		startDegree = 0;
 	} else {
-		startDegree++;
+		startDegree += deltaDegree;
+	}
+}
+
+// Set the parameters properly and play the selected song
+function playSong(songIndex){
+	console.log(songIndex, currentPlayingSongIndex);
+
+	let songToPlay = presets[songIndex][presets[songIndex].length - 1];
+
+	// Button we clicked on is the current playing song. Pause it
+	if ((songIndex == currentPlayingSongIndex) && (songToPlay.isPlaying() == true)) {
+		songToPlay.amp(0, 0.2);
+		songToPlay.pause();
+		noLoop();
+	} else if ((songIndex == currentPlayingSongIndex) && (songToPlay.isPlaying() == false)) {
+		songToPlay.amp(1, 0.2);
+		songToPlay.loop();
+		loop();
+	} else {
+		// Stop current playing song
+		if (currentPlayingSongIndex != -1) {
+			let currentPlayingSong = presets[currentPlayingSongIndex][presets[currentPlayingSongIndex].length - 1];
+			if (currentPlayingSong.isPlaying()) {
+				currentPlayingSong.stop();
+			}
+		}
+
+		// Change parameters
+		amplitudeThreshold 			= presets[songIndex][2];
+		maxAmplitudeExpectancy 	= presets[songIndex][3];
+		scaleMultiplier 				= presets[songIndex][4];
+
+		// Clear screen
+		background(0);
+
+		// Play selected song
+		songToPlay.amp(1, 0.2);
+		songToPlay.loop();
+
+		currentPlayingSongIndex = songIndex;
+		
+		loop();
 	}
 }
 
