@@ -80,3 +80,33 @@ https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode/getFloatFrequencyD
 
 JS FFT Size
 https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode/fftSize
+
+JS stereo pan
+https://developer.mozilla.org/en-US/docs/Web/API/StereoPannerNode
+
+PRE-RENDERED ANALYSIS WITH POST/GET REQUESTS
+https://therewasaguy.github.io/p5-music-viz/
+https://developer.spotify.com/console/get-audio-analysis-track/?id=06AKEBrKUckW0KREUWRnvT
+
+audio buffer getChannelData to Frequency
+https://stackoverflow.com/questions/45397325/js-audio-audiobuffer-getchanneldata-to-frequency
+
+Audiobuffer get channel data
+https://developer.mozilla.org/en-US/docs/Web/API/AudioBuffer/getChannelData
+https://github.com/processing/p5.js/blob/main/lib/addons/p5.sound.js#L4392
+
+fft analyze
+https://github.com/processing/p5.js/blob/main/lib/addons/p5.sound.js#L5770
+
+wavesurfer.js
+https://wavesurfer-js.org/
+
+FFT librairies
+https://github.com/corbanbrook/dsp.js
+https://github.com/vail-systems/node-fft
+
+http://browserify.org/
+https://stackoverflow.com/questions/49562978/how-to-use-npm-modules-in-browser-is-possible-to-use-them-even-in-local-pc
+
+FFT.js
+https://gist.github.com/corbanbrook/4ef7ce98fe4453d754cd7e4a341d6e5b
