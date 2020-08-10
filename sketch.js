@@ -1,329 +1,682 @@
-let soundPlayingFlag = false;
+const styleTextHidden = '#000000';
+const styleTextVisible = '#ffffff';
+
+let showAdvancedCheckBox;	// Shows/Hides all advanced settings
+
+// SLIDERS
+let fmaxSlider;
+let fminSlider;
+let dbmaxSlider;
+let dbminSlider;
+let highPassSlider;
+let lowPassSlider;
+
+let sliderArray = [];
+
+// SLIDER INPUTS
+let fmaxInput;
+let fminInput;
+let dbmaxInput;
+let dbminInput;
+let highPassInput;
+let lowPassInput;
+
+let inputArray = [];
+
+// SLIDER TEXTS
+let fmaxText;
+let fminText;
+let dbmaxText;
+let dbminText;
+let highPassText;
+let lowPassText;
+
+let textArray = [];
+
+// Color scheme dropdown
+let colorSchemeDropDown;
+let colorSchemeText;
+let colorHueLow = 270;
+let	colorHueHigh = 0;
+let colorSaturationLow = 100;
+let colorSaturationHigh = 100;
+let colorBrightnessLow = 50;
+let colorBrightnessHigh = 50;
+
+// BUTTONS
+let resetToDefaultBtn;
+let browseFileBtn;
+let playPauseBtn;
+
+// Whole sound mode checkbox
+let wholeSoundModeCheckbox;
+
+// DEFAULT VALUES
+let fmaxDefault = 6000;
+let fminDefault = 0;
+let dbmaxDefault = -40;
+let dbminDefault = -70;
+let highPassDefault = 10;
+let lowPassSDefault = 22050;
+
+// Presets holding default parameters and songs
+// [name, fmax, fmin, dbmax, dbmin, highPass, lowPass, songFile (pushed in preload)]
+let presetAtlanticDolphin = ['AtlanticDolphin', 24000, 0, -50, -70, 10, 22050];
+let presetMinke 					= ['Minke', 6000, 0, -35, -70, 10, 22050];
+let presetHumpback 				= ['Humpback', 6000, 0, -35, -70, 10, 22050];
+let presetBeakedDolphin 	= ['BeakedDolphin', 24000, 0, -65, -76, 10, 22050];
+let presetBeardedSeal 		= ['BeardedSeal', 6000, 0, -35, -70, 10, 22050];
+let presetHarborPorpoise 	= ['HarborPorpoise', 6000, 0, -35, -70, 10, 22050];
+
+let presets = [presetAtlanticDolphin, presetMinke, presetHumpback, presetBeakedDolphin, presetBeardedSeal, presetHarborPorpoise];
+
+let soundButtonArray = Array(presets.length);
+let currentPlayingSoundIndex = -1;
+let currentSoundFile;
+
 let numberOfBins = 1024;
 let startDegree = 0;
-let deltaDegree = 1;
+let degreesPerFrame = 1;
+let wholeSoundModeFlag = false;
 let nyquist, deltaF;
 let frequencyBins = [];
-let melFrequencyBins = [];
-let arcArray = new Array(numberOfBins);
-let ampthreshSlider;
-let amplitudeThreshold;		// CHANGE THIS
-let circleScale;
-let maxPeakValue = amplitudeThreshold;
-let maxAmplitudeExpectancy = -30;
-let scaleMultiplier;
-let melRangeLow = 0;
-let melRangeHigh = 4000;
-let eraserLineThickness = 10;
 let fft;
-let HighPass;
-let LowPass;
-let maxAmpdB = -40;
+let eraserLineThickness = 6;
+let highPass, lowPass;
 
-// TESTS
-let new_fft;
+let desiredFrameRate = 20;
 
-let custom_sound_file_input;
-let custom_sound_file;
-
-//	[name, amplitudeThreshold, maxAmplitudeExpectancy, scaleMultiplier, eraserLineThickness, songFile]
-let presetTempest 				= ['Tempest',-70, -35, 1, 8];
-let presetAtlanticDolphin = ['AtlanticDolphin',-70, -50, 1, 8];
-let presetMinke 					= ['Minke',-70, -50, 1, 8];
-let presetDontBeSad 			= ['DontBeSad',-70, -30, 1, 8];
-let presetHumpback 				= ['Humpback',-70, -30, 1, 8];
-let presetBeakedDolphin 	= ['BeakedDolphin',-70, -65, 1, 8];
-let presetJekyll 					= ['Jekyll',-70, -35, 1, 8];
-let presetShineOn 				= ['ShineOn',-70, -20, 1, 8];
-let presetEcstasyOfGold		= ['EcstasyOfGold',-70, -30, 1, 8];
-
-let presets = [presetTempest, presetAtlanticDolphin, presetMinke, presetDontBeSad, presetHumpback, presetBeakedDolphin, presetJekyll, presetShineOn, presetEcstasyOfGold];
-
-let songButtonArray = Array(presets.length);
-let currentPlayingSongIndex = -1;
-
-// Tempest [-52, -35], scale*8
-// Atlantic dolphin [-70, -50, *.6]
-// Minke [-70, -50, *9]
-// Don't be sad [-65, -30, *5]
-// Humpback [-70, -30, *10]
-// beaked dolphin [-76, -70, *.5]
-// Jekyll [-55, -35, *12]
 
 function preload() {
-  //sound = loadSound('assets/sounds/meow.wav');
-  //sound = loadSound('assets/sounds/sin_440Hz_-3dBFS_3s.wav');
-  //sound = loadSound('assets/sounds/sin_4400Hz_-3dBFS_3s.wav');
-  //sound = loadSound('assets/sounds/JoshWoodward-CS-NoVox-10-HeyRuth.mp3');humpback-whale.mp3
-  presetTempest.push(loadSound('assets/sounds/Tempest.mp3'));
   presetAtlanticDolphin.push(loadSound('assets/sounds/atlantic-spotted-dolphin.mp3'));
   presetMinke.push(loadSound('assets/sounds/minke-whale.mp3'));
-  presetDontBeSad.push(loadSound('assets/sounds/1-02 Don\'t Be Sad.mp3'));
   presetHumpback.push(loadSound('assets/sounds/humpback-whale.mp3'));
   presetBeakedDolphin.push(loadSound('assets/sounds/short-beaked-common-dolphin.mp3'));
-  presetJekyll.push(loadSound('assets/sounds/10 Jekyll.m4a'));
-  presetShineOn.push(loadSound('assets/sounds/Pink_Floyd_-_Shine_On_You_Crazy_Diamond_Parts_I-V.mp3'));
-  presetEcstasyOfGold.push(loadSound('assets/sounds/Carolina_Eyck_The_Ecstasy_of_Gold_by_Ennio_Morricone.wav'));
-  //sound = loadSound('assets/sounds/sin_1000Hz_-3dBFS_3s.wav');
+  presetBeardedSeal.push(loadSound('assets/sounds/bearded-seal.mp3'));
+  presetHarborPorpoise.push(loadSound('assets/sounds/harbor-porpoise.mp3'));
 }
-
-function mousePressed() {
-  userStartAudio();
-	//toggleSound();
-}
-
 
 function setup() {
-  // mimics the autoplay policy
+
+  // mimics the autoplay policy for google chrome
   getAudioContext().suspend();
+
+  frameRate(144);
 
   // Canvas
   createCanvas(windowWidth,windowHeight);
   background(0);
 
-  //filter & compressor object
-
-  HighPass = new p5.HighPass();
-  Limiter = new p5.Compressor();
-
-  //LowPass = new p5.LowPass();
-
-  //filter sliders
-  highSlider = createSlider(10, 22050, 10);
-  highSlider.size().width = 50
-  highSlider.position(windowWidth-highSlider.size().width, 20);
-  //lowSlider = createSlider(10, 22050, 22050);
-  //lowSlider.size().width = 50
-  //lowSlider.position(windowWidth-lowSlider.size().width, 40);
-  
-  //gainSlider = createSlider(0, 100, 0);
-  //gainSlider.size().width = 50
-  //gainSlider.position(windowWidth-gainSlider.size().width, 40);
+  colorMode(HSL);
+	angleMode(DEGREES);
 
   // FFT object
-  fft = new p5.FFT();
-
-  //circleScale slider
-  circleSlider = createSlider(0.5, 12, 5);
-  circleSlider.position(windowWidth-circleSlider.size().width, 40);
-  ampthreshSlider = createSlider(-70, -40 ,-55);
-  ampthreshSlider.position(windowWidth-ampthreshSlider.size().width, 60);
-
-  // Start sound @ 0 volume
-  /*sound.amp(0);
-  sound.loop();*/
+ 	fft = new p5.FFT();
 
   // Nyquist Hz value
 	nyquist = sampleRate() / 2;
 	deltaF = nyquist / numberOfBins;
 
-	// Create our bins of frequencies
+	circleScale = Math.min(windowWidth,windowHeight)*0.7;
+
+  // Create our bins of frequencies
 	for (let i = 0; i < numberOfBins; i++) {
 		frequencyBins[i] = round(deltaF * i);
 	}
 
-	// Create our bins of mel scaled frequencies
-	melFrequencyBins = frequencyBins.map((freq) => round(2595 * Math.log10(1 + (freq/700))));
+	//show advanced checkbox
+	showAdvancedCheckBox = createCheckbox('Show Settings', false);
+	showAdvancedCheckBox.style('color', styleTextVisible);
+	showAdvancedCheckBox.style('font-size', '15px');
+	showAdvancedCheckBox.position(windowWidth - 300, 10);
+	showAdvancedCheckBox.changed(advanceSettingsToggle);
 
-	// Buttons for each song
-	for (let i = 0; i < songButtonArray.length; i++) {
-		songButtonArray[i] = createButton(presets[i][0]); // Name each button
-		songButtonArray[i].mousePressed(() => playSong(i));	// Call playSong with the index of played song
-		songButtonArray[i].position(10, (i+1) * 20);
+	// ----- FMAX -----
+	// Slider
+	fmaxSlider = createSlider(0, nyquist, 6000).hide();
+	fmaxSlider.position(showAdvancedCheckBox.x + 20, showAdvancedCheckBox.y + 50);
+	fmaxSlider.input(sliderValueChanged);
+	// Input
+	fmaxInput = createInput(fmaxSlider.value()).hide();
+	fmaxInput.input(sliderValueInput);
+	fmaxInput.size(40);
+	fmaxInput.position(fmaxSlider.x + 180, fmaxSlider.y);
+	// Text
+	fmaxText = createDiv('Max Frequency (Hz)');
+	fmaxText.position(fmaxSlider.x+5, fmaxSlider.y-15);
+	fmaxText.style('display', 'none');
+	fmaxText.style('color', styleTextVisible);
+
+
+	// ----- FMIN -----
+	// Slider
+	fminSlider = createSlider(0, nyquist, 0).hide();
+	fminSlider.position(showAdvancedCheckBox.x + 20, fmaxSlider.y + 50);
+	fminSlider.input(sliderValueChanged);
+	// Input
+	fminInput = createInput(fminSlider.value()).hide();
+	fminInput.input(sliderValueInput);
+	fminInput.size(40);
+	fminInput.position(fminSlider.x + 180, fminSlider.y);
+	// Text
+	fminText = createDiv('Min Frequency (Hz)');
+	fminText.position(fminSlider.x+5, fminSlider.y-15);
+	fminText.style('display', 'none');
+	fminText.style('color', styleTextVisible);
+
+	// ----- DBMAX -----
+	// Slider
+	dbmaxSlider = createSlider(-90, -20, -40).hide();
+	dbmaxSlider.position(showAdvancedCheckBox.x + 20, fminSlider.y + 50);
+	dbmaxSlider.input(sliderValueChanged);
+	// Input
+	dbmaxInput = createInput(dbmaxSlider.value()).hide();
+	dbmaxInput.input(sliderValueInput);
+	dbmaxInput.size(40);
+	dbmaxInput.position(dbmaxSlider.x + 180, dbmaxSlider.y);
+	// Text
+	dbmaxText = createDiv('Max Amplitude (dB)');
+	dbmaxText.position(dbmaxSlider.x+5, dbmaxSlider.y-15);
+	dbmaxText.style('display', 'none');
+	dbmaxText.style('color', styleTextVisible);
+
+	// ----- DBMIN -----
+	// Slider
+	dbminSlider = createSlider(-90, -20, -60).hide();
+	dbminSlider.position(showAdvancedCheckBox.x + 20, dbmaxSlider.y + 50);
+	dbminSlider.input(sliderValueChanged);
+	// Input
+	dbminInput = createInput(dbminSlider.value()).hide();
+	dbminInput.input(sliderValueInput);
+	dbminInput.size(40);
+	dbminInput.position(dbminSlider.x + 180, dbminSlider.y);
+	// Text
+	dbminText = createDiv('Min Amplitude (dB)');
+	dbminText.position(dbminSlider.x+5, dbminSlider.y-15);
+	dbminText.style('display', 'none');
+	dbminText.style('color', styleTextVisible);
+
+	// ----- HIGHPASS -----
+	highPass = new p5.HighPass();
+	// Slider
+	highPassSlider = createSlider(10, 22050, 10).hide();
+	highPassSlider.position(showAdvancedCheckBox.x + 20, dbminSlider.y + 50);
+	highPassSlider.input(sliderValueChanged);
+	// Input
+	highPassInput = createInput(highPassSlider.value()).hide();
+	highPassInput.input(sliderValueInput);
+	highPassInput.size(40);
+	highPassInput.position(highPassSlider.x + 180, highPassSlider.y);
+	// Text
+	highPassText = createDiv('HighPass Filter (Hz)');
+	highPassText.position(highPassSlider.x+5, highPassSlider.y-15);
+	highPassText.style('display', 'none');
+	highPassText.style('color', styleTextVisible);
+
+	// ----- LOWPASS -----
+	lowPass = new p5.LowPass();
+	// Slider
+	lowPassSlider = createSlider(10, 22050, 22050).hide();
+	lowPassSlider.position(showAdvancedCheckBox.x + 20, highPassSlider.y + 50);
+	lowPassSlider.input(sliderValueChanged);
+	// Input
+	lowPassInput = createInput(lowPassSlider.value()).hide();
+	lowPassInput.input(sliderValueInput);
+	lowPassInput.size(40);
+	lowPassInput.position(lowPassSlider.x + 180, lowPassSlider.y);
+	// Text
+	lowPassText = createDiv('LowPass Filter (Hz)');
+	lowPassText.position(lowPassSlider.x+5, lowPassSlider.y-15);
+	lowPassText.style('display', 'none');
+	lowPassText.style('color', styleTextVisible);
+	
+	sliderArray = [fmaxSlider, 
+							 	fminSlider, 
+							 	dbmaxSlider, 
+							 	dbminSlider, 
+							 	highPassSlider, 
+							 	lowPassSlider];	
+
+	inputArray = [fmaxInput, 
+								fminInput, 
+								dbmaxInput, 
+								dbminInput, 
+								highPassInput, 
+								lowPassInput];
+
+	textArray = [fmaxText, 
+							fminText, 
+							dbmaxText, 
+							dbminText, 
+							highPassText, 
+							lowPassText];
+
+	// ----- COLOR SCHEME -----
+	// Drop down
+	colorSchemeDropDown = createSelect().hide();
+	colorSchemeDropDown.position(showAdvancedCheckBox.x + 20, lowPassSlider.y + 55);
+	colorSchemeDropDown.option('Jet');
+	colorSchemeDropDown.option('Grayscale');
+	colorSchemeDropDown.option('Viridis');
+	colorSchemeDropDown.option('Warm');
+	colorSchemeDropDown.option('Winter');
+	colorSchemeDropDown.changed(colorSchemeChanged);
+	// Text
+	colorSchemeText = createDiv('Color Scheme :');
+	colorSchemeText.position(colorSchemeDropDown.x, colorSchemeDropDown.y-25);
+	colorSchemeText.style('display', 'none');
+	colorSchemeText.style('color', styleTextVisible);
+
+	// ----- RESET TO DEFAULT -----
+	// Button
+	resetToDefaultBtn = createButton('Reset to Default').hide();
+	resetToDefaultBtn.mousePressed(resetToDefault);
+	resetToDefaultBtn.position(colorSchemeDropDown.x, colorSchemeDropDown.y+40);
+
+	// ----- WHOLE SOUND MODE -----
+	wholeSoundModeCheckbox = createCheckbox('Whole sound mode', false);
+	wholeSoundModeCheckbox.style('color', '#ffffff');
+	wholeSoundModeCheckbox.style('font-size', '15px');
+	wholeSoundModeCheckbox.hide();
+	wholeSoundModeCheckbox.position(colorSchemeDropDown.x, resetToDefaultBtn.y + 40);
+	wholeSoundModeCheckbox.changed(wholeSoundModeToggle);
+
+	// ----- BROWSE BUTTON -----
+	browseFileBtn = createFileInput(handleFile);
+  browseFileBtn.position(10, showAdvancedCheckBox.y);
+
+  // ----- PLAY/PAUSE BUTTON -----
+	playPauseBtn = createButton('Play/Pause');
+	playPauseBtn.mousePressed(playPause);
+	playPauseBtn.position(browseFileBtn.x, browseFileBtn.y+30);
+
+	// ----- PRESET SOUND BUTTONS -----
+	for (let i = 0; i < soundButtonArray.length; i++) {
+		soundButtonArray[i] = createButton(presets[i][0]);
+		soundButtonArray[i].mousePressed(() => playSound(i));
+
+		if (i == 0) {
+			soundButtonArray[i].position(playPauseBtn.x, playPauseBtn.y + 50);
+		} else {
+			soundButtonArray[i].position(playPauseBtn.x, soundButtonArray[i-1].y + 22);
+		}		
 	}
-
-	/*
-	playButton = createButton('Play / Pause');
-	playButton.mousePressed(toggleSound);
-	playButton.position(10,radiusSliderArray[radiusSliderArray.length - 1].y + 20);*/
-
-
-  custom_sound_file_input = createFileInput(handleFile);
-  custom_sound_file_input.position(songButtonArray[songButtonArray.length - 1].x, songButtonArray[songButtonArray.length - 1].y + songButtonArray[songButtonArray.length - 1].height+2);
-
 }
 
-
 function draw() {
-  angleMode(DEGREES);
-  colorMode(HSB);
 
-	circleScale = Math.min(windowWidth,windowHeight)*circleSlider.value();		// CHANGE THIS
+	let spectrum = fft.analyze(numberOfBins, "dB");	
 
-  let spectrum = fft.analyze(numberOfBins, "dB");
+	// ---------- ERASER LINES ----------
+	// Only draw these if we are not using wholeSoundMode
+	if (wholeSoundModeFlag == false) {
+	  strokeWeight(eraserLineThickness);
+	  stroke(0);
+	  for (var i = 0; i < numberOfBins*3; i++) {
+	  	
+	  	let eraserRadius = (map(i, 0, numberOfBins*3, 1, Math.min(windowWidth,windowHeight)*12, true)); // Hz from 1 to 23kHz -> 10 to 100 radius
+	  	let xE1 = width/2 + (eraserRadius * cos(startDegree+3*degreesPerFrame));
+			let yE1 = height/2 + (eraserRadius * sin(startDegree+3*degreesPerFrame));
+			let xE2 = width/2 + (eraserRadius * cos(startDegree+4*degreesPerFrame));
+			let yE2 = height/2 + (eraserRadius * sin(startDegree+4*degreesPerFrame));
 
-  HighPass.freq(highSlider.value());
-  Limiter.ratio(10);
-  Limiter.threshold(-40);
-  //LowPass.freq(lowSlider.value());
-
- // HighPass.gain(gainSlider.value());
-
-  /*let energyArray = [];
-  for (let i = 0; i < frequencyBins.length; i++) {
-  	// -------------------------ERASER LINES GOING ROUND THE CIRCLE-----------------
-  	// MEL SCALE https://en.wikipedia.org/wiki/Mel_scale
-		let melFrequency = round(2595 * Math.log10(1 + (frequencyBins[i]/700)));
-		//let radius = round(map(melFrequency, 0, 4000, 10, circleScale, true));
-  	//let radius = round(exp(i/numberOfBins)*circleScale/10);
-  	//let radius = round(log(i)/log(numberOfBins)*circleScale);
-  	let radius = round(map(frequencyBins[i], 1, nyquist, 10, circleScale, true)); // Hz from 1 to 23kHz -> 10 to 100 radius
-		//let radius = round(map(peakFrequency, 1, nyquist, 10, circleScale, true));
-		let xE1 = width/2 + round(radius * cos(startDegree+2));
-		let yE1 = height/2 + round(radius * sin(startDegree+2));
-		let xE2 = width/2 + round(radius * cos(startDegree+3));
-		let yE2 = height/2 + round(radius * sin(startDegree+3));
-
-		strokeWeight(8);
-		stroke(0);
-		line(xE1, yE1, xE2, yE2);
-
-		// Get energy in each frequency bin
-		
-  }*/
-
-  // ---------- ERASER LINES ----------
-  strokeWeight(eraserLineThickness);
-  stroke(0);
-  for (var i = 0; i < numberOfBins*2; i++) {
-  	/*let eraserRadius = (map(frequencyBins[i], 10, nyquist, 1, Math.min(windowWidth,windowHeight)*12, true)); // Hz from 1 to 23kHz -> 10 to 100 radius*/
-  	let eraserRadius = (map(i, 0, numberOfBins*2, 1, Math.min(windowWidth,windowHeight)*12, true)); // Hz from 1 to 23kHz -> 10 to 100 radius
-  	let xE1 = width/2 + (eraserRadius * cos(startDegree+3*deltaDegree));
-		let yE1 = height/2 + (eraserRadius * sin(startDegree+3*deltaDegree));
-		let xE2 = width/2 + (eraserRadius * cos(startDegree+4*deltaDegree));
-		let yE2 = height/2 + (eraserRadius * sin(startDegree+4*deltaDegree));
-
-		//strokeWeight(map(i, 1, circleScale, 10, 15));
-		line(xE1, yE1, xE2, yE2);
+			line(xE1, yE1, xE2, yE2);
+	  }
   }
 
-  // ACTUAL SOUND LINES
-	for (let i = 0; i< spectrum.length; i++){
-    if (spectrum[i] > ampthreshSlider.value()) {
-
+	//  ---------- SOUND LINES ----------
+	for ( i = 0; i< spectrum.length; i++){
+		// Sound is above threshold, draw it !
+    if (spectrum[i] > dbminSlider.value()) {
 			let peakFrequency = i * (nyquist / numberOfBins);
-			let peakBinIndex = findClosestFrequencyBinIndex(peakFrequency);
+			// Frequency is within range, draw it !
+			if (peakFrequency => fminSlider.value() && peakFrequency <= fmaxSlider.value()) {
+				let peakBinIndex = findClosestFrequencyBinIndex(peakFrequency);
 
-			// MEL SCALE https://en.wikipedia.org/wiki/Mel_scale
-			let melFrequency = round(2595 * Math.log10(1 + (frequencyBins[peakBinIndex]/700)));
-			//let radius = round(map(melFrequency, 0, 4000, 10, circleScale, true));
-			//let radius = round(exp(peakBinIndex/(numberOfBins/4)));
-			//let radius = round(log(peakBinIndex)/log(numberOfBins)*circleScale);
-			let radius = (map(frequencyBins[peakBinIndex], 10, nyquist, ((circleSlider.value())*3)+20, circleScale, true)); // Hz from 1 to 23kHz -> 10 to 100 radius
-			//let radius = round(map(peakFrequency, 1, nyquist, 20, circleScale, true));
-			let amplitudeThreshold = ampthreshSlider.value();
-			let thickness = map(spectrum[i], -70, maxAmpdB, 0.6, 3.5, true);
-			let x1 = width/2 + round(radius * cos(startDegree));
-			let y1 = height/2 + round(radius * sin(startDegree));
-			let x2 = width/2 + round(radius * cos(startDegree+1));
-			let y2 = height/2 + round(radius * sin(startDegree+1));
+				// Figure out where and how to draw the line
+				//let radius = (map(frequencyBins[peakBinIndex], fminSlider.value(), fmaxSlider.value(),  50, circleScale, true));
+				let radius = (map(peakFrequency, fminSlider.value(), fmaxSlider.value(),  50, circleScale, true));
+				let thickness = map(spectrum[i], dbminSlider.value(), dbmaxSlider.value(), 0.2, 2, true);
+				let x1 = width/2 + round(radius * cos(startDegree));
+				let y1 = height/2 + round(radius * sin(startDegree));
+				let x2 = width/2 + round(radius * cos(startDegree+1*degreesPerFrame));
+				let y2 = height/2 + round(radius * sin(startDegree+1*degreesPerFrame));
 
-			//let colour = 0;
-			// if (i < numberOfBins/20) {
-			// 	colour = map(i, 0, numberOfBins/20, 360, 0);
-			// } else {
-			// 	colour = map(i, numberOfBins/20, numberOfBins/10, 360, 0);
-			// }
+				// Finding colors according to color scheme
+				let colorHue = map(spectrum[i], dbminSlider.value(), dbmaxSlider.value(), colorHueLow, colorHueHigh);
+				let colorSaturation = map(spectrum[i], dbminSlider.value(), dbmaxSlider.value(), colorSaturationLow, colorSaturationHigh);
+				let colorBrightness = map(spectrum[i], dbminSlider.value(), dbmaxSlider.value(), colorBrightnessLow, colorBrightnessHigh);
+				strokeWeight(thickness);
 
-			//let colour = map(spectrum[i], amplitudeThreshold, maxPeakValue, 360, 0);
-			let colour = map(spectrum[i], -70, maxAmpdB, 270, 0);
-			/*let bright = map(i, 0, numberOfBins/30, 0, 100);
-			let sat = map(thickness, 0, numberOfBins/30, 25, 100);*/
-
-			strokeWeight(thickness);
-			//strokeWeight(7);
-			stroke(colour, 100, 50);
-			line(x1, y1, x2, y2);
+				if (colorSchemeDropDown.value() == 'Grayscale') {							
+					stroke(colorHue);
+				} else {					
+					stroke(colorHue, colorSaturation, colorBrightness);
+				}
+				
+				// Line
+				line(x1, y1, x2, y2);
+			}			
 		}
 	}
 
+	// Go around the circle drawing
 	if (startDegree >= 360) {
 		startDegree = 0;
 	} else {
-		startDegree += deltaDegree;
+		startDegree += degreesPerFrame;
 	}
 }
 
-// Set the parameters properly and play the selected song
-function playSong(songIndex){
+function mousePressed() {
+  userStartAudio();
+}
 
-	let songToPlay = presets[songIndex][presets[songIndex].length - 1];
+function windowResized() {
+	console.log('windowResized : ' + windowWidth, windowHeight);
+  resizeCanvas(windowWidth, windowHeight);
+  background(0);
+  circleScale = Math.min(windowWidth,windowHeight)*0.7;
 
-	// Button we clicked on is the current playing song. Pause it
-	if ((songIndex == currentPlayingSongIndex) && (songToPlay.isPlaying() == true)) {
-		songToPlay.amp(0, 0.2);
-		songToPlay.pause();
-		noLoop();
-	} else if ((songIndex == currentPlayingSongIndex) && (songToPlay.isPlaying() == false)) {
-		songToPlay.amp(1, 0.2);
-		songToPlay.loop();
-		loop();
-	} else {
-		// Stop current playing song
-		if (currentPlayingSongIndex != -1) {
-			let currentPlayingSong = presets[currentPlayingSongIndex][presets[currentPlayingSongIndex].length - 1];
-			if (currentPlayingSong.isPlaying()) {
-				currentPlayingSong.stop();
-			}
+  // UI Reposition
+  showAdvancedCheckBox.position(windowWidth - 300, 10);
+	fmaxSlider.position(showAdvancedCheckBox.x + 20, showAdvancedCheckBox.y + 50);
+	fmaxInput.position(fmaxSlider.x + 180, fmaxSlider.y);
+	fmaxText.position(fmaxSlider.x+5, fmaxSlider.y-15);
+	fminSlider.position(showAdvancedCheckBox.x + 20, fmaxSlider.y + 50);
+	fminInput.position(fminSlider.x + 180, fminSlider.y);
+	fminText.position(fminSlider.x+5, fminSlider.y-15);
+	dbmaxSlider.position(showAdvancedCheckBox.x + 20, fminSlider.y + 50);
+	dbmaxInput.position(dbmaxSlider.x + 180, dbmaxSlider.y);
+	dbmaxText.position(dbmaxSlider.x+5, dbmaxSlider.y-15);
+	dbminSlider.position(showAdvancedCheckBox.x + 20, dbmaxSlider.y + 50);
+	dbminInput.position(dbminSlider.x + 180, dbminSlider.y);
+	dbminText.position(dbminSlider.x+5, dbminSlider.y-15);
+	highPassSlider.position(showAdvancedCheckBox.x + 20, dbminSlider.y + 50);
+	highPassInput.position(highPassSlider.x + 180, highPassSlider.y);
+	highPassText.position(highPassSlider.x+5, highPassSlider.y-15);
+	lowPassSlider.position(showAdvancedCheckBox.x + 20, highPassSlider.y + 50);
+	lowPassInput.position(lowPassSlider.x + 180, lowPassSlider.y);
+	lowPassText.position(lowPassSlider.x+5, lowPassSlider.y-15);
+	colorSchemeDropDown.position(showAdvancedCheckBox.x + 20, lowPassSlider.y + 55);
+	colorSchemeText.position(colorSchemeDropDown.x, colorSchemeDropDown.y-25);
+	resetToDefaultBtn.position(colorSchemeDropDown.x, colorSchemeDropDown.y+40);	
+	wholeSoundModeCheckbox.position(colorSchemeDropDown.x, resetToDefaultBtn.y + 40);
+  browseFileBtn.position(10, showAdvancedCheckBox.y);
+	playPauseBtn.position(browseFileBtn.x, browseFileBtn.y+30);
+
+	for (var i = 0; i < soundButtonArray.length; i++) {
+		if (i == 0) {
+			soundButtonArray[i].position(playPauseBtn.x, playPauseBtn.y + 50);
+		} else {
+			soundButtonArray[i].position(playPauseBtn.x, soundButtonArray[i-1].y + 22);
+		}
+		
+	}
+}
+
+function advanceSettingsToggle() {
+	console.log('advanceSettingsToggle : ' + showAdvancedCheckBox.checked());
+
+	// Checkbox is ticked : show it all !
+	if (showAdvancedCheckBox.checked() == true) {
+		for (var i = 0; i < sliderArray.length; i++) {
+			sliderArray[i].show();
 		}
 
-		// Change parameters
-		amplitudeThreshold 			= ampthreshSlider.value();
-		maxAmplitudeExpectancy 	= presets[songIndex][2];
-		scaleMultiplier 				= circleSlider.value();
-		eraserLineThickness			= presets[songIndex][4];
+		for (var i = 0; i < inputArray.length; i++) {
+			inputArray[i].show();
+		}
 
-		// Clear screen
-		background(0);
+		for (var i = 0; i < textArray.length; i++) {
+			textArray[i].style('display', 'inline');
+		}
 
-		// Play selected song
-		let ampPeaks = songToPlay.getPeaks(1024);
-		let maxAmp;
-		maxAmp = Math.max(...ampPeaks);
-		maxAmpdB = map(maxAmp, -1, 1, -70, -40);
-		ampthreshSlider.elt.max = maxAmpdB;
+		colorSchemeDropDown.show();		
+		colorSchemeText.style('display', 'inline');
 
-		songToPlay.amp(1, 0.2);
-		songToPlay.loop();
+		resetToDefaultBtn.show();
 
-		// TESTS
-		//console.log(songToPlay.buffer.length, songToPlay.buffer.sampleRate);
-		//new_fft = new FFT(songToPlay.buffer.length, songToPlay.buffer.sampleRate);
+		wholeSoundModeCheckbox.show();
 
-		currentPlayingSongIndex = songIndex;
-		
-		songToPlay.disconnect();
-		songToPlay.connect(HighPass);
-		//songToPlay.connect(LowPass);
-		loop();
+	} else {
+		for (var i = 0; i < sliderArray.length; i++) {
+			sliderArray[i].hide();
+		}
+
+		for (var i = 0; i < inputArray.length; i++) {
+			inputArray[i].hide();
+		}
+
+		for (var i = 0; i < textArray.length; i++) {
+			textArray[i].style('display', 'none');
+		}
+
+		colorSchemeDropDown.hide();		
+		colorSchemeText.style('display', 'none');
+
+		resetToDefaultBtn.hide();
+
+		wholeSoundModeCheckbox.hide();
 	}
+
 }
 
-function handleFile(file){
-	console.log(file);
-	if (file.type === 'audio') {
-		custom_sound_file = loadSound(file, fileLoaded);
-	}
-}
-
-function fileLoaded() {
-		custom_sound_file.play();
-		console.log(custom_sound_file);
-}
-
-
-function toggleSound() {
-	if (soundPlayingFlag) {
-    soundPlayingFlag = false;
-    sound.amp(0, 0.2);
-  } else {
-    soundPlayingFlag = true;
-    sound.amp(1, 0.2);
+function sliderValueChanged() {
+	// ---------- SLIDER CONTROL ----------
+  for (var i = 0; i < sliderArray.length; i++) {
+  	inputArray[i].value(sliderArray[i].value());
+	  fminSlider.value(constrain(fminSlider.value(), 0, fmaxSlider.value()));
+	  dbminSlider.value(constrain(dbminSlider.value(), -90, dbmaxSlider.value()));
+		highPass.freq(constrain(highPassSlider.value(), 10, 22050));
+		lowPass.freq(constrain(lowPassSlider.value(), 10, 22050));
   }
 }
 
-function findClosestFrequencyBinIndex(needle) {
-	return round(closest(needle, frequencyBins) / deltaF);
+function sliderValueInput(){
+	console.log('sliderValueInput');
+  for (var i = 0; i < sliderArray.length; i++) {
+  	inputArray[i].value(constrain(inputArray[i].value(), sliderArray[i].elt.min, sliderArray[i].elt.max));
+  	sliderArray[i].value(inputArray[i].value());
+  }
+  sliderValueChanged();
+}
+
+function resetToDefault() {
+	console.log('resetToDefault');
+	console.log(fmaxDefault, fminDefault, dbmaxDefault, dbminDefault, highPassDefault, lowPassSDefault);
+	fmaxSlider.value(fmaxDefault);
+	fminSlider.value(fminDefault);
+	dbmaxSlider.value(dbmaxDefault);
+	dbminSlider.value(dbminDefault);
+	highPassSlider.value(highPassDefault);
+	lowPassSlider.value(lowPassSDefault);
+	sliderValueChanged();
+	sliderValueInput();
+}
+
+function colorSchemeChanged() {
+	console.log('colorSchemeChanged : ' + colorSchemeDropDown.value());
+	if (colorSchemeDropDown.value() == 'Jet') {
+		colorMode(HSL);
+		colorHueLow = 270;
+		colorHueHigh = 0;
+ 		colorSaturationLow = 100;
+		colorSaturationHigh = 100;
+ 		colorBrightnessLow = 50;
+ 		colorBrightnessHigh = 50;
+	}
+
+	if (colorSchemeDropDown.value() == 'Grayscale') {
+		colorMode(RGB);
+		colorHueLow = 10;
+		colorHueHigh = 255;
+	}
+
+	if (colorSchemeDropDown.value() == 'Viridis') {
+		colorMode(HSL);
+		colorHueLow = 290;
+		colorHueHigh = 60;
+ 		colorSaturationLow = 60;
+		colorSaturationHigh = 100;
+ 		colorBrightnessLow = 35;
+ 		colorBrightnessHigh = 60;
+	}
+
+	if (colorSchemeDropDown.value() == 'Warm') {
+		colorMode(HSL);
+		colorHueLow = 0;
+		colorHueHigh = 60;
+ 		colorSaturationLow = 60;
+		colorSaturationHigh = 100;
+ 		colorBrightnessLow = 35;
+ 		colorBrightnessHigh = 85;
+	}
+
+	if (colorSchemeDropDown.value() == 'Winter') {
+		colorMode(HSL);
+		colorHueLow = 155;
+		colorHueHigh = 250;
+ 		colorSaturationLow = 100;
+		colorSaturationHigh = 100;
+ 		colorBrightnessLow = 60;
+ 		colorBrightnessHigh = 40;
+	}
+}
+
+function handleFile(file){	
+	console.log('handleFile');
+	if (currentSoundFile && currentSoundFile.isPlaying()) {
+		currentSoundFile.stop();
+	}
+	if (file.type === 'audio') {
+		currentSoundFile = loadSound(file, fileLoaded);
+		// Set default values
+		fmaxDefault = 6000;
+		fminDefault = 0;
+		dbmaxDefault = -40;
+		dbminDefault = -70;
+		highPassDefault = 10;
+		lowPassSDefault = 22050;
+		resetToDefault();
+	}
+	background(0);
+	loop();
+}
+
+function fileLoaded() {
+	currentSoundFile.amp(1);
+	calculateDegreesPerFrame();
+	if (wholeSoundModeFlag == true) {
+		currentSoundFile._looping = false;
+		currentSoundFile.play();
+	} else {
+		currentSoundFile.loop();
+	}
+	console.log(currentSoundFile);
+
+ 	// Connect filters
+  currentSoundFile.disconnect();
+  currentSoundFile.connect(highPass);
+  currentSoundFile.connect(lowPass);
+}
+
+function playSound(soundIndex){
+	console.log('playSound : ' + soundIndex);
+
+	loop();
+
+	let soundToPlayPreset = presets[soundIndex];
+	let soundToPlayFile = soundToPlayPreset[presets[soundIndex].length - 1];
+
+	// stop current playing sound if exists
+	if (currentSoundFile && currentSoundFile.isPlaying()) {
+		currentSoundFile.disconnect();
+		currentSoundFile.stop();
+	}
+
+	// Set default values
+	fmaxDefault = soundToPlayPreset[1];
+	fminDefault = soundToPlayPreset[2];
+	dbmaxDefault = soundToPlayPreset[3];
+	dbminDefault = soundToPlayPreset[4];
+	highPassDefault = soundToPlayPreset[5];
+	lowPassSDefault = soundToPlayPreset[6];
+	resetToDefault();
+
+	// Clear screen
+	background(0);
+
+	// Connect to filters
+  currentSoundFile = soundToPlayFile;	// Sound to play becomes current sound
+	currentSoundFile.disconnect();
+  currentSoundFile.connect(highPass);
+  currentSoundFile.connect(lowPass);
+
+	calculateDegreesPerFrame();  
+
+	// loop
+	currentSoundFile.amp(1, 0.2);
+	if (wholeSoundModeFlag == true) {
+		currentSoundFile._looping = false;
+		currentSoundFile.play();
+	} else {
+		currentSoundFile.loop();
+	}
+
+}
+
+function playPause() {
+	console.log('playPause');
+
+	if (currentSoundFile && currentSoundFile.isPlaying()) {
+		calculateDegreesPerFrame();
+		currentSoundFile.pause();
+		noLoop();
+	} else {
+		calculateDegreesPerFrame();
+		if (wholeSoundModeFlag == true) {
+			currentSoundFile._looping = false;
+			currentSoundFile.play();
+		} else {
+			currentSoundFile.loop();
+		}
+		loop();
+	}
+}
+
+function wholeSoundModeToggle() {
+	console.log('wholeSoundModeToggle');
+	wholeSoundModeFlag = wholeSoundModeCheckbox.checked();
+	background(0);
+
+	if (currentSoundFile && currentSoundFile.isPlaying()) {
+			calculateDegreesPerFrame();
+			currentSoundFile.stop();
+			currentSoundFile.jump(0);
+			if (wholeSoundModeFlag == true) {
+				currentSoundFile._looping = false;
+				currentSoundFile.play();
+			} else {
+				currentSoundFile.loop();
+			}
+	}
+
+	if (wholeSoundModeFlag == true) {
+		frameRate(desiredFrameRate);
+	} else {
+  	frameRate(144);
+		degreesPerFrame = 1;
+	}
+}
+
+function calculateDegreesPerFrame() {
+	if (wholeSoundModeFlag == true) {
+		degreesPerFrame = 360 / (currentSoundFile.duration() * desiredFrameRate);
+	} else {
+		degreesPerFrame = 1;
+	}
+	console.log('calculateDegreesPerFrame : ' + degreesPerFrame);
 }
 
 function closest(needle, haystack) {
@@ -339,40 +692,44 @@ function closest(needle, haystack) {
     });
 }
 
+function findClosestFrequencyBinIndex(needle) {
+	return round(closest(needle, frequencyBins) / deltaF);
+}
 
-// TODO 
+
+
+
+
 /*
-	Add sliders for :
-		circleScale
-		threshold
+		----- TODO -----
 
-	Add your own file button
+		- Colour schemes			DONE
 
-	Press play to play, not continuous loop
+		- Play/Pause booton	 	DONE
 
-	Play/Pause
+		- Preloaded sound examples	DONE
+			-> Changes default values of sliders TODO : FIND DEFAULT VALUES FOR EACH PRESET
 
-	logarithmic circleScale instead of linear : NOT ANYMORE
-		See blackoard.png
+		- Full sound mode
+			-> 360 / soundLength
+			-> setinterval callback
 
-	dynamic threshold over frequencies (lower threshold for higher frequencies for example)
-		low mid high thresh slider
+		- Slider control in slider.changed instead of draw	DONE
 
-	Threshold presets available with button click (Whale species) : DONE
+		- Window Resize 	DONE
 
-	slider hider toggle
-
-	resise window
-
-	instead of eraser line from center have black line on all frequency bin draw itself : DONE
-
-	Playhead(startDegree) depends on song.currentTime(), not just frames
-
-	COLOURS : YAY
-
-	Have lines draw themselves and go around from a fixed line
-		Fixed reference point for view is playhead, not vinyl
-
-	slider based on current song position
-	can adjust where we are in song
+		
+millisPerDegree = (currentSoundFile.duration() * 1000) / 360;
+  incrementDegreeFlag = true;
+  clearInterval(incrementInterval);
+  incrementInterval = setInterval(() => {
+		if (incrementDegreeFlag) {
+			// Go around the circle drawing
+			if (startDegree >= 360) {
+				startDegree = 0;
+			} else {
+				startDegree += degreesPerFrame;
+			}
+		}
+	}, millisPerDegree);
 */
