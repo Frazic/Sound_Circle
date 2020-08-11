@@ -36,11 +36,11 @@ let textArray = [];
 // Color scheme dropdown
 let colorSchemeDropDown;
 let colorSchemeText;
-let colorHueLow = 270;
+let colorHueLow = 320;
 let	colorHueHigh = 0;
-let colorSaturationLow = 100;
+let colorSaturationLow = 46;
 let colorSaturationHigh = 100;
-let colorBrightnessLow = 50;
+let colorBrightnessLow = 10;
 let colorBrightnessHigh = 50;
 
 // BUTTONS
@@ -52,21 +52,21 @@ let playPauseBtn;
 let wholeSoundModeCheckbox;
 
 // DEFAULT VALUES
-let fmaxDefault = 6000;
-let fminDefault = 0;
-let dbmaxDefault = -40;
-let dbminDefault = -70;
+let fmaxDefault = 5000;
+let fminDefault = 10;
+let dbmaxDefault = -27;
+let dbminDefault = -60;
 let highPassDefault = 10;
-let lowPassSDefault = 22050;
+let lowPassDefault = 22050;
 
 // Presets holding default parameters and songs
 // [name, fmax, fmin, dbmax, dbmin, highPass, lowPass, songFile (pushed in preload)]
-let presetAtlanticDolphin = ['AtlanticDolphin', 24000, 0, -50, -70, 10, 22050];
-let presetMinke 					= ['Minke', 6000, 0, -35, -70, 10, 22050];
-let presetHumpback 				= ['Humpback', 6000, 0, -35, -70, 10, 22050];
-let presetBeakedDolphin 	= ['BeakedDolphin', 24000, 0, -65, -76, 10, 22050];
-let presetBeardedSeal 		= ['BeardedSeal', 6000, 0, -35, -70, 10, 22050];
-let presetHarborPorpoise 	= ['HarborPorpoise', 6000, 0, -35, -70, 10, 22050];
+let presetAtlanticDolphin = ['AtlanticDolphin', 24000, 10, -40, -70, 10, 22050];
+let presetMinke 					= ['Minke', 2000, 10, -35, -60, 10, 22050];
+let presetHumpback 				= ['Humpback', 3000, 10, -30, -50, 10, 22050];
+let presetBeakedDolphin 	= ['BeakedDolphin', 24000, 10, -47, -67, 10, 22050];
+let presetBeardedSeal 		= ['BeardedSeal', 6000, 10, -27, -70, 10, 22050];
+let presetHarborPorpoise 	= ['HarborPorpoise', 24000, 10, -68, -87, 10000, 22050];
 
 let presets = [presetAtlanticDolphin, presetMinke, presetHumpback, presetBeakedDolphin, presetBeardedSeal, presetHarborPorpoise];
 
@@ -78,13 +78,13 @@ let numberOfBins = 1024;
 let startDegree = 0;
 let degreesPerFrame = 1;
 let wholeSoundModeFlag = false;
-let nyquist, deltaF;
-let frequencyBins = [];
+let nyquist;
 let fft;
-let eraserLineThickness = 6;
+let fftSmoothing = 0.4;
+let eraserLineThickness = 3;
 let highPass, lowPass;
 
-let desiredFrameRate = 20;
+let fullSoundFrameRate = 20;
 
 
 function preload() {
@@ -101,8 +101,6 @@ function setup() {
   // mimics the autoplay policy for google chrome
   getAudioContext().suspend();
 
-  frameRate(144);
-
   // Canvas
   createCanvas(windowWidth,windowHeight);
   background(0);
@@ -111,20 +109,14 @@ function setup() {
 	angleMode(DEGREES);
 
   // FFT object
- 	fft = new p5.FFT();
+ 	fft = new p5.FFT(fftSmoothing, numberOfBins);
 
   // Nyquist Hz value
 	nyquist = sampleRate() / 2;
-	deltaF = nyquist / numberOfBins;
 
 	circleScale = Math.min(windowWidth,windowHeight)*0.7;
 
-  // Create our bins of frequencies
-	for (let i = 0; i < numberOfBins; i++) {
-		frequencyBins[i] = round(deltaF * i);
-	}
-
-	//show advanced checkbox
+	// ----- SETTINGS CHECKBOX -----
 	showAdvancedCheckBox = createCheckbox('Show Settings', false);
 	showAdvancedCheckBox.style('color', styleTextVisible);
 	showAdvancedCheckBox.style('font-size', '15px');
@@ -133,7 +125,7 @@ function setup() {
 
 	// ----- FMAX -----
 	// Slider
-	fmaxSlider = createSlider(0, nyquist, 6000).hide();
+	fmaxSlider = createSlider(10, nyquist, fmaxDefault).hide();
 	fmaxSlider.position(showAdvancedCheckBox.x + 20, showAdvancedCheckBox.y + 50);
 	fmaxSlider.input(sliderValueChanged);
 	// Input
@@ -150,7 +142,7 @@ function setup() {
 
 	// ----- FMIN -----
 	// Slider
-	fminSlider = createSlider(0, nyquist, 0).hide();
+	fminSlider = createSlider(10, nyquist, fminDefault).hide();
 	fminSlider.position(showAdvancedCheckBox.x + 20, fmaxSlider.y + 50);
 	fminSlider.input(sliderValueChanged);
 	// Input
@@ -166,7 +158,7 @@ function setup() {
 
 	// ----- DBMAX -----
 	// Slider
-	dbmaxSlider = createSlider(-90, -20, -40).hide();
+	dbmaxSlider = createSlider(-90, -20, dbmaxDefault).hide();
 	dbmaxSlider.position(showAdvancedCheckBox.x + 20, fminSlider.y + 50);
 	dbmaxSlider.input(sliderValueChanged);
 	// Input
@@ -182,7 +174,7 @@ function setup() {
 
 	// ----- DBMIN -----
 	// Slider
-	dbminSlider = createSlider(-90, -20, -60).hide();
+	dbminSlider = createSlider(-90, -20, dbminDefault).hide();
 	dbminSlider.position(showAdvancedCheckBox.x + 20, dbmaxSlider.y + 50);
 	dbminSlider.input(sliderValueChanged);
 	// Input
@@ -199,7 +191,7 @@ function setup() {
 	// ----- HIGHPASS -----
 	highPass = new p5.HighPass();
 	// Slider
-	highPassSlider = createSlider(10, 22050, 10).hide();
+	highPassSlider = createSlider(10, 22050, highPassDefault).hide();
 	highPassSlider.position(showAdvancedCheckBox.x + 20, dbminSlider.y + 50);
 	highPassSlider.input(sliderValueChanged);
 	// Input
@@ -216,7 +208,7 @@ function setup() {
 	// ----- LOWPASS -----
 	lowPass = new p5.LowPass();
 	// Slider
-	lowPassSlider = createSlider(10, 22050, 22050).hide();
+	lowPassSlider = createSlider(10, 22050, lowPassDefault).hide();
 	lowPassSlider.position(showAdvancedCheckBox.x + 20, highPassSlider.y + 50);
 	lowPassSlider.input(sliderValueChanged);
 	// Input
@@ -306,36 +298,32 @@ function setup() {
 function draw() {
 
 	let spectrum = fft.analyze(numberOfBins, "dB");	
-
-	// ---------- ERASER LINES ----------
-	// Only draw these if we are not using wholeSoundMode
-	if (wholeSoundModeFlag == false) {
-	  strokeWeight(eraserLineThickness);
-	  stroke(0);
-	  for (var i = 0; i < numberOfBins*3; i++) {
-	  	
-	  	let eraserRadius = (map(i, 0, numberOfBins*3, 1, Math.min(windowWidth,windowHeight)*12, true)); // Hz from 1 to 23kHz -> 10 to 100 radius
+	
+	for ( i = 0; i< spectrum.length; i++){
+		// ---------- ERASER LINES ----------
+		// Only draw these if we are not using wholeSoundMode
+		if (wholeSoundModeFlag == false) {
+			let eraserRadius = map(i, 0, spectrum.length, 50, circleScale, true); // Hz from 1 to 23kHz -> 10 to 100 radius
 	  	let xE1 = width/2 + (eraserRadius * cos(startDegree+3*degreesPerFrame));
 			let yE1 = height/2 + (eraserRadius * sin(startDegree+3*degreesPerFrame));
 			let xE2 = width/2 + (eraserRadius * cos(startDegree+4*degreesPerFrame));
 			let yE2 = height/2 + (eraserRadius * sin(startDegree+4*degreesPerFrame));
-
+		  strokeWeight(eraserLineThickness);
+			stroke(0);
 			line(xE1, yE1, xE2, yE2);
-	  }
-  }
+		}
 
-	//  ---------- SOUND LINES ----------
-	for ( i = 0; i< spectrum.length; i++){
+		//  ---------- SOUND LINES ----------
 		// Sound is above threshold, draw it !
     if (spectrum[i] > dbminSlider.value()) {
 			let peakFrequency = i * (nyquist / numberOfBins);
 			// Frequency is within range, draw it !
-			if (peakFrequency => fminSlider.value() && peakFrequency <= fmaxSlider.value()) {
-				let peakBinIndex = findClosestFrequencyBinIndex(peakFrequency);
+			if ((peakFrequency => fminSlider.value()) && (peakFrequency <= fmaxSlider.value())) {
+				// let peakBinIndex = findClosestFrequencyBinIndex(peakFrequency);
 
 				// Figure out where and how to draw the line
-				//let radius = (map(frequencyBins[peakBinIndex], fminSlider.value(), fmaxSlider.value(),  50, circleScale, true));
-				let radius = (map(peakFrequency, fminSlider.value(), fmaxSlider.value(),  50, circleScale, true));
+				// let radius = map(frequencyBins[peakBinIndex], fminSlider.value(), fmaxSlider.value(),  50, circleScale, true);
+				let radius = map(peakFrequency, fminSlider.value(), fmaxSlider.value(),  50, circleScale, true);
 				let thickness = map(spectrum[i], dbminSlider.value(), dbmaxSlider.value(), 0.2, 2, true);
 				let x1 = width/2 + round(radius * cos(startDegree));
 				let y1 = height/2 + round(radius * sin(startDegree));
@@ -343,9 +331,9 @@ function draw() {
 				let y2 = height/2 + round(radius * sin(startDegree+1*degreesPerFrame));
 
 				// Finding colors according to color scheme
-				let colorHue = map(spectrum[i], dbminSlider.value(), dbmaxSlider.value(), colorHueLow, colorHueHigh);
-				let colorSaturation = map(spectrum[i], dbminSlider.value(), dbmaxSlider.value(), colorSaturationLow, colorSaturationHigh);
-				let colorBrightness = map(spectrum[i], dbminSlider.value(), dbmaxSlider.value(), colorBrightnessLow, colorBrightnessHigh);
+				let colorHue = map(spectrum[i], dbminSlider.value(), dbmaxSlider.value(), colorHueLow, colorHueHigh, true);
+				let colorSaturation = map(spectrum[i], dbminSlider.value(), dbmaxSlider.value(), colorSaturationLow, colorSaturationHigh, true);
+				let colorBrightness = map(spectrum[i], dbminSlider.value(), dbmaxSlider.value(), colorBrightnessLow, colorBrightnessHigh, true);
 				strokeWeight(thickness);
 
 				if (colorSchemeDropDown.value() == 'Grayscale') {							
@@ -353,7 +341,7 @@ function draw() {
 				} else {					
 					stroke(colorHue, colorSaturation, colorBrightness);
 				}
-				
+
 				// Line
 				line(x1, y1, x2, y2);
 			}			
@@ -410,8 +398,7 @@ function windowResized() {
 			soundButtonArray[i].position(playPauseBtn.x, playPauseBtn.y + 50);
 		} else {
 			soundButtonArray[i].position(playPauseBtn.x, soundButtonArray[i-1].y + 22);
-		}
-		
+		}		
 	}
 }
 
@@ -459,7 +446,6 @@ function advanceSettingsToggle() {
 
 		wholeSoundModeCheckbox.hide();
 	}
-
 }
 
 function sliderValueChanged() {
@@ -484,13 +470,13 @@ function sliderValueInput(){
 
 function resetToDefault() {
 	console.log('resetToDefault');
-	console.log(fmaxDefault, fminDefault, dbmaxDefault, dbminDefault, highPassDefault, lowPassSDefault);
+	console.log(fmaxDefault, fminDefault, dbmaxDefault, dbminDefault, highPassDefault, lowPassDefault);
 	fmaxSlider.value(fmaxDefault);
 	fminSlider.value(fminDefault);
 	dbmaxSlider.value(dbmaxDefault);
 	dbminSlider.value(dbminDefault);
 	highPassSlider.value(highPassDefault);
-	lowPassSlider.value(lowPassSDefault);
+	lowPassSlider.value(lowPassDefault);
 	sliderValueChanged();
 	sliderValueInput();
 }
@@ -499,11 +485,11 @@ function colorSchemeChanged() {
 	console.log('colorSchemeChanged : ' + colorSchemeDropDown.value());
 	if (colorSchemeDropDown.value() == 'Jet') {
 		colorMode(HSL);
-		colorHueLow = 270;
+		colorHueLow = 320;
 		colorHueHigh = 0;
- 		colorSaturationLow = 100;
+ 		colorSaturationLow = 46;
 		colorSaturationHigh = 100;
- 		colorBrightnessLow = 50;
+ 		colorBrightnessLow = 10;
  		colorBrightnessHigh = 50;
 	}
 
@@ -552,16 +538,33 @@ function handleFile(file){
 	if (file.type === 'audio') {
 		currentSoundFile = loadSound(file, fileLoaded);
 		// Set default values
-		fmaxDefault = 6000;
-		fminDefault = 0;
-		dbmaxDefault = -40;
-		dbminDefault = -70;
+		fmaxDefault = 5000;
+		fminDefault = 10;
+		dbmaxDefault = -27;
+		dbminDefault = -60;
 		highPassDefault = 10;
-		lowPassSDefault = 22050;
+		lowPassDefault = 22050;
 		resetToDefault();
 	}
 	background(0);
 	loop();
+}
+
+function fileLoaded() {
+	currentSoundFile.amp(1);
+	calculateDegreesPerFrame();
+	if (wholeSoundModeFlag == true) {
+		currentSoundFile._looping = false;
+		currentSoundFile.play();
+	} else {
+		currentSoundFile.loop();
+	}
+	console.log(currentSoundFile);
+
+ 	// Connect filters
+  currentSoundFile.disconnect();
+  currentSoundFile.connect(highPass);
+  currentSoundFile.connect(lowPass);
 }
 
 function fileLoaded() {
@@ -601,7 +604,7 @@ function playSound(soundIndex){
 	dbmaxDefault = soundToPlayPreset[3];
 	dbminDefault = soundToPlayPreset[4];
 	highPassDefault = soundToPlayPreset[5];
-	lowPassSDefault = soundToPlayPreset[6];
+	lowPassDefault = soundToPlayPreset[6];
 	resetToDefault();
 
 	// Clear screen
@@ -623,7 +626,6 @@ function playSound(soundIndex){
 	} else {
 		currentSoundFile.loop();
 	}
-
 }
 
 function playPause() {
@@ -663,7 +665,7 @@ function wholeSoundModeToggle() {
 	}
 
 	if (wholeSoundModeFlag == true) {
-		frameRate(desiredFrameRate);
+		frameRate(fullSoundFrameRate);
 	} else {
   	frameRate(144);
 		degreesPerFrame = 1;
@@ -672,64 +674,9 @@ function wholeSoundModeToggle() {
 
 function calculateDegreesPerFrame() {
 	if (wholeSoundModeFlag == true) {
-		degreesPerFrame = 360 / (currentSoundFile.duration() * desiredFrameRate);
+		degreesPerFrame = 360 / (currentSoundFile.duration() * fullSoundFrameRate);
 	} else {
 		degreesPerFrame = 1;
 	}
 	console.log('calculateDegreesPerFrame : ' + degreesPerFrame);
 }
-
-function closest(needle, haystack) {
-    return haystack.reduce((a, b) => {
-        let aDiff = Math.abs(a - needle);
-        let bDiff = Math.abs(b - needle);
-
-        if (aDiff == bDiff) {
-            return a > b ? a : b;
-        } else {
-            return bDiff < aDiff ? b : a;
-        }
-    });
-}
-
-function findClosestFrequencyBinIndex(needle) {
-	return round(closest(needle, frequencyBins) / deltaF);
-}
-
-
-
-
-
-/*
-		----- TODO -----
-
-		- Colour schemes			DONE
-
-		- Play/Pause booton	 	DONE
-
-		- Preloaded sound examples	DONE
-			-> Changes default values of sliders TODO : FIND DEFAULT VALUES FOR EACH PRESET
-
-		- Full sound mode
-			-> 360 / soundLength
-			-> setinterval callback
-
-		- Slider control in slider.changed instead of draw	DONE
-
-		- Window Resize 	DONE
-
-		
-millisPerDegree = (currentSoundFile.duration() * 1000) / 360;
-  incrementDegreeFlag = true;
-  clearInterval(incrementInterval);
-  incrementInterval = setInterval(() => {
-		if (incrementDegreeFlag) {
-			// Go around the circle drawing
-			if (startDegree >= 360) {
-				startDegree = 0;
-			} else {
-				startDegree += degreesPerFrame;
-			}
-		}
-	}, millisPerDegree);
-*/

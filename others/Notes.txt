@@ -110,3 +110,13 @@ https://stackoverflow.com/questions/49562978/how-to-use-npm-modules-in-browser-i
 
 FFT.js
 https://gist.github.com/corbanbrook/4ef7ce98fe4453d754cd7e4a341d6e5b
+
+
+Black background
+let p = createDiv('I am a dom element');
+  p.size(windowWidth,windowHeight);
+  p.center();
+  p.style('left', '0px');
+  p.style('top', '0px');
+  p.style('background-color', '#ffffff');
+  p.style('z-index', '-9999');
