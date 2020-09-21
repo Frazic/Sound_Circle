@@ -1,5 +1,6 @@
 # Sound Circle of Beauty
-Creative artistic way of visualising sounds, music and animal calls
+Creative artistic way of visualising sounds, music and animal calls  
+Check out [the live website!](https://frazic.github.io/Sound_Circle_of_Beauty/)
 
 ## Description
 Artistic circular spectrogram visualiser made with [P5.js](https://p5js.org/)
