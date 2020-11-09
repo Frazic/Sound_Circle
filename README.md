@@ -26,7 +26,6 @@ You will need to have a local http server running on your machine to host this c
 Once you've installed Node.js and http-server just run either scripts called `start_http_server` and navigate to `localhost:8080` on your browser
 
 ## TO-DO
-- Microphone input
 - Possibility to show exact frequency under the mouse cursor if you want further analysis
 
 ### Copyright 2020, Allison Stokoe and Joshua Bruylant, All rights reserved.
