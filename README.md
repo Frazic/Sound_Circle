@@ -1,4 +1,4 @@
-# Sound Circle of Beauty
+# Sound Circle
 Creative artistic way of visualising sounds, music and animal calls  
 Check out [the live website!](https://frazic.github.io/Sound_Circle_of_Beauty/)
 
