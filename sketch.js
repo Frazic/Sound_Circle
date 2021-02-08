@@ -84,7 +84,7 @@ let presetHumpback = ['Humpback', 2000, 10, -30, -50, 10, 22050, 0.6]; //, 10];
 let presetBeakedDolphin = ['BeakedDolphin', 24000, 1000, -47, -70, 3000, 22050, 0.5]; //, 10];
 let presetBeardedSeal = ['BeardedSeal', 5000, 10, -27, -70, 10, 22050, 0.5]; //, 10];
 let presetHarborPorpoise = ['HarborPorpoise', 24000, 11000, -68, -87, 10000, 22050, 0.5]; //, 10];
-let presetWeddelSeal = ['WeddelSeal', 7500, 10, -38, -70, 10, 22050, 0.5]; //, 10];
+let presetWeddelSeal = ['WeddellSeal', 7500, 10, -38, -70, 10, 22050, 0.5]; //, 10];
 
 let presets = [presetAtlanticDolphin, presetMinke, presetHumpback, presetBeakedDolphin, presetBeardedSeal, presetHarborPorpoise, presetWeddelSeal];
 
