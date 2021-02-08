@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------
-Copyright 2020, Allison Stokoe and Joshua Bruylant, All rights reserved.
+Copyright 2021, Allison Stokoe and Joshua Bruylant, All rights reserved.
 ----------------------------------------------------------------------*/
 
 const styleTextHidden = '#000000';
