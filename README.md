@@ -28,4 +28,4 @@ Once you've installed Node.js and http-server just run either scripts called `st
 ## TO-DO
 - Possibility to show exact frequency under the mouse cursor if you want further analysis
 
-### Copyright 2020, Allison Stokoe and Joshua Bruylant, All rights reserved.
+### Copyright 2021, Allison Stokoe and Joshua Bruylant, All rights reserved.
